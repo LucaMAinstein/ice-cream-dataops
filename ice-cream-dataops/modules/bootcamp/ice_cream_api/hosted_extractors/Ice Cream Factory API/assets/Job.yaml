@@ -1,0 +1,11 @@
+externalId: ICAPI Assets Ainstein
+sourceId: Ice Cream Factory API
+destinationId: ICAPI Assets Ainstein
+format:
+  type: custom
+  encoding: utf8
+  mappingId: ICAPI Assets Ainstein
+config:
+  interval: 1d
+  path: /site/all/csv
+  method: get
