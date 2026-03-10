@@ -1,45 +1,49 @@
 workflowExternalId: wf_icapi_data_pipeline
 version: '1'
 workflowDefinition:
-  description: 'Run ICAPI pipeline tasks in sequence'
   tasks:
-    - externalId: 'wf_icapi_data_pipeline_icapi_datapoints_extractor'
-      type: 'function'
+    - externalId: create_asset_hierarchy
+      type: transformation
+      parameters:
+        transformation:
+          externalId: create_asset_hierarchy
+          data: {}
+      retries: 3
+      timeout: 3600
+      onFailure: abortWorkflow
+
+    - externalId: contextualize_ts_assets
+      type: transformation
+      parameters:
+        transformation:
+          externalId: contextualize_ts_assets
+          data: {}
+      retries: 3
+      timeout: 3600
+      onFailure: abortWorkflow
+      dependsOn:
+        - externalId: create_asset_hierarchy
+
+    - externalId: icapi_datapoints_extractor
+      type: function
       parameters:
         function:
-          externalId: 'icapi_datapoints_extractor'
-          data: {}
-        isAsyncComplete: false
-      name: 'Extract DataPoints'
-      description: 'Extract DataPoints data from the Ice Cream API'
+          externalId: icapi_datapoints_extractor
+          data: { "hours": 1 }
       retries: 3
       timeout: 3600
-      onFailure: 'abortWorkflow'
-
-    - externalId: 'wf_icapi_data_pipeline_create_asset_hierarchy'
-      type: 'transformation'
-      parameters:
-        transformation:
-          externalId: 'create_asset_hierarchy'
-          concurrencyPolicy: 'fail'
-      name: 'Create Asset Hierarchy'
-      description: 'Create Cognite Asset hierarchy'
-      retries: 3
-      timeout: 3600
-      onFailure: 'abortWorkflow'
+      onFailure: abortWorkflow
       dependsOn:
-        - externalId: 'wf_icapi_data_pipeline_icapi_datapoints_extractor'
+        - externalId: contextualize_ts_assets
 
-    - externalId: 'wf_icapi_data_pipeline_contextualize_ts_assets'
-      type: 'transformation'
+    - externalId: oee_timeseries
+      type: function
       parameters:
-        transformation:
-          externalId: 'contextualize_ts_assets'
-          concurrencyPolicy: 'fail'
-      name: 'Contextualize TimeSeries and Assets'
-      description: 'Link TimeSeries to Assets'
+        function:
+          externalId: oee_timeseries
+          data: { "sites": ["Sao_Paulo", "Houston", "Oslo", "Kuala_Lumpur", "Hannover", "Nuremberg", "Marseille", "Chicago", "Rotterdam", "London"], "hours": 336, "backfill": true }
       retries: 3
       timeout: 3600
-      onFailure: 'skipTask'
+      onFailure: abortWorkflow
       dependsOn:
-        - externalId: 'wf_icapi_data_pipeline_create_asset_hierarchy'
+        - externalId: icapi_datapoints_extractor
