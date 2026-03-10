@@ -1,49 +1,45 @@
 workflowExternalId: wf_icapi_data_pipeline
 version: '1'
 workflowDefinition:
+  description: 'Run ICAPI pipeline tasks in sequence'
   tasks:
-    - externalId: create_asset_hierarchy
-      type: function
+    - externalId: 'wf_icapi_data_pipeline_icapi_datapoints_extractor'
+      type: 'function'
       parameters:
         function:
-          externalId: create_asset_hierarchy
-          data: { "hours": 1 }
+          externalId: 'icapi_datapoints_extractor'
+          data: {}
+        isAsyncComplete: false
+      name: 'Extract DataPoints'
+      description: 'Extract DataPoints data from the Ice Cream API'
       retries: 3
       timeout: 3600
-      onFailure: abortWorkflow
+      onFailure: 'abortWorkflow'
 
-    - externalId: contextualize_ts_assets
-      type: function
+    - externalId: 'wf_icapi_data_pipeline_create_asset_hierarchy'
+      type: 'transformation'
       parameters:
-        function:
-          externalId: contextualize_ts_assets
-          data: { "hours": 1 }
+        transformation:
+          externalId: 'create_asset_hierarchy'
+          concurrencyPolicy: 'fail'
+      name: 'Create Asset Hierarchy'
+      description: 'Create Cognite Asset hierarchy'
       retries: 3
       timeout: 3600
-      onFailure: abortWorkflow
+      onFailure: 'abortWorkflow'
       dependsOn:
-        - externalId: create_asset_hierarchy
+        - externalId: 'wf_icapi_data_pipeline_icapi_datapoints_extractor'
 
-    - externalId: icapi_datapoints_extractor
-      type: function
+    - externalId: 'wf_icapi_data_pipeline_contextualize_ts_assets'
+      type: 'transformation'
       parameters:
-        function:
-          externalId: icapi_datapoints_extractor
-          data: { "hours": 1 }
+        transformation:
+          externalId: 'contextualize_ts_assets'
+          concurrencyPolicy: 'fail'
+      name: 'Contextualize TimeSeries and Assets'
+      description: 'Link TimeSeries to Assets'
       retries: 3
       timeout: 3600
-      onFailure: abortWorkflow
+      onFailure: 'skipTask'
       dependsOn:
-        - externalId: contextualize_ts_assets
-
-    - externalId: oee_timeseries
-      type: function
-      parameters:
-        function:
-          externalId: oee_timeseries
-          data: { "hours": 1 }
-      retries: 3
-      timeout: 3600
-      onFailure: abortWorkflow
-      dependsOn:
-        - externalId: icapi_datapoints_extractor
+        - externalId: 'wf_icapi_data_pipeline_create_asset_hierarchy'
